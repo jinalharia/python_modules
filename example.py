@@ -1,10 +1,18 @@
 from loggingUtils import Logger
-import os
+from timingUtils import TimingUtil
 
 logger = Logger(__name__).logger
+timer = TimingUtil(logger)
+
 
 logger.info("testing this works")
 
-log2 = Logger("log2", log_file=os.path.join("logs", "example.log")).logger
+timer.print("after first logger.info")
+
+log2 = Logger("log2", log_file="example.log").logger
+
+timer.print("after create new logger")
 
 log2.debug("testing this prints to both console and file")
+
+timer.print("after final logger.debug")

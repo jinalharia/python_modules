@@ -3,24 +3,46 @@ import sys
 import os
 from logging.handlers import TimedRotatingFileHandler
 
-FORMATTER = logging.Formatter("%(asctime)s | %(filename)s[line:%(lineno)d] | %(name)s | %(levelname)s | %(message)s")
-LOG_FILE = os.path.join("logs", "app.log")
+class Logger(object):
+    level_relations = {
+        'debug': logging.DEBUG,
+        'info': logging.INFO,
+        'warning': logging.WARNING,
+        'error': logging.ERROR,
+        'critical': logging.CRITICAL
+    }
 
-def get_console_handler():
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(FORMATTER)
-    return console_handler
+    def __init__(self, logger_name, level="debug", fmt="%(asctime)s | %(filename)s[line:%(lineno)d] | %(name)s | %(levelname)s | %(message)s",
+                 log_file=None, when="D", interval=1, backupCount=5):
+        self.FORMATTER = logging.Formatter(fmt)
+        self.logger_name = logger_name
+        self.level = level
 
-def get_file_handler():
-    file_handler = TimedRotatingFileHandler(LOG_FILE, when="D", interval=1, backupCount=5)
-    file_handler.setFormatter(FORMATTER)
-    return file_handler
+        self.log_file = log_file
+        self.when = when
+        self.interval = interval
+        self.backupCount = backupCount
 
-def get_logger(logger_name):
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.DEBUG) # better to have too much log than not enough
-    logger.addHandler(get_console_handler())
-    logger.addHandler(get_file_handler())
-    logger.propagate = False
-    return logger
+        # create logger and set the logging level
+        self.logger = logging.getLogger(self.logger_name)
+        self.logger.setLevel(self.level_relations.get(self.level))
 
+        # create the console handler and add to logger
+        self.logger.addHandler(self.get_console_handler())
+
+        # create the file handler if specified and add to logger
+        if self.log_file is not None:
+            self.logger.addHandler(self.get_file_handler(self.log_file, self.when, self.interval, self.backupCount))
+
+        # with this pattern it is rarely necessary to propogate the error up to the parent
+        self.logger.propagate = False
+
+    def get_console_handler(self):
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(self.FORMATTER)
+        return console_handler
+
+    def get_file_handler(self, log_file, when, interval, backupCount):
+        file_handler = TimedRotatingFileHandler(log_file, when=when, interval=interval, backupCount=backupCount)
+        file_handler.setFormatter(self.FORMATTER)
+        return file_handler
